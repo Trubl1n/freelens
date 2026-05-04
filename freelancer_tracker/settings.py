@@ -37,14 +37,10 @@ DEBUG = os.getenv("DEBUG", "False" if IS_PRODUCTION else "True").lower() in {
     "on",
 }
 
-_allowed_hosts_raw = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
-ALLOWED_HOSTS = [
-    host.strip()
-    for host in _allowed_hosts_raw.split(",")
-    if host.strip()
-]
-if not ALLOWED_HOSTS:
-    ALLOWED_HOSTS = ["127.0.0.1", "localhost"]
+ALLOWED_HOSTS = os.environ.get(
+    "ALLOWED_HOSTS",
+    "localhost,127.0.0.1,.railway.app,.up.railway.app",
+).split(",")
 
 if IS_PRODUCTION:
     ALLOWED_HOSTS.extend(
@@ -102,12 +98,14 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "freelancer_tracker.wsgi.application"
 
-DATABASE_URL = "postgresql://postgres:AkhhIMyEyWIWeLFRfLXjyjMFJQndfyja@trolley.proxy.rlwy.net:19199/railway"
 DATABASES = {
     "default": dj_database_url.config(
-        default=DATABASE_URL,
+        default=os.environ.get(
+            "DATABASE_URL",
+            "postgresql://postgres:AkhhIMyEyWIWeLFRfLXjyjMFJQndfyja@trolley.proxy.rlwy.net:19199/railway",
+        ),
         conn_max_age=600,
-        ssl_require=IS_PRODUCTION,
+        conn_health_checks=True,
     )
 }
 
