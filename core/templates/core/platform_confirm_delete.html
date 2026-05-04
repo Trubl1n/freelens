@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Удаление платформы · Freelens{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <section class="card animate-slide-up">
+    <div class="flex items-start gap-4 mb-6">
+      <span class="stats-icon" style="color: var(--red); background: rgba(255, 59, 48, .1);"><i data-lucide="trash-2"></i></span>
+      <div>
+        <h1 class="card-title text-2xl">Удалить платформу?</h1>
+        <p class="card-subtitle">{{ object.name }} — действие необратимо.</p>
+      </div>
+    </div>
+    <form method="post" class="flex flex-wrap items-center gap-3">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-danger"><i data-lucide="trash-2"></i>Да, удалить</button>
+      <a href="{% url 'core:platform-list' %}" class="btn btn-ghost">Отмена</a>
+    </form>
+  </section>
+</div>
+{% endblock %}

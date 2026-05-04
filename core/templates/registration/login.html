@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Вход · Freelens{% endblock %}
+{% block content %}
+<div class="auth-page">
+  <section class="auth-card animate-slide-up">
+    <div class="text-center mb-6">
+      <div class="auth-logo">F</div>
+      <h1 class="card-title text-2xl">Вход</h1>
+      <p class="card-subtitle">Войдите в аккаунт Freelens.</p>
+    </div>
+
+    <form method="post" action="{% url 'core:login' %}">
+      {% csrf_token %}
+      {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+
+      {% if form.non_field_errors %}
+        <div class="toast toast-error mb-4" style="position: static;"><i data-lucide="alert-circle"></i>{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <div class="form-group">
+        <label for="id_username">Имя пользователя</label>
+        <input type="text" name="username" id="id_username" required placeholder="username" {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+        {% if form.username.errors %}<p class="form-error">{{ form.username.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="id_password">Пароль</label>
+        <input type="password" name="password" id="id_password" required placeholder="••••••••">
+        {% if form.password.errors %}<p class="form-error">{{ form.password.errors.0 }}</p>{% endif %}
+      </div>
+
+      <div class="flex justify-between items-center mb-4">
+        <span></span>
+        <a href="#" class="text-sm text-accent-primary">Забыли пароль?</a>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full" style="min-height: 52px;">Войти</button>
+    </form>
+
+    <p class="text-center text-sm text-secondary mt-6 mb-0">
+      Нет аккаунта? <a href="{% url 'core:register' %}" class="font-semibold text-accent-primary">Зарегистрироваться</a>
+    </p>
+  </section>
+</div>
+{% endblock %}

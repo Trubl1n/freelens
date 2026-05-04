@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Заказы · Freelens{% endblock %}
+{% block content %}
+<div class="page-header animate-slide-up">
+  <div>
+    <h1 class="page-title">Заказы</h1>
+    <p class="page-kicker">Управление заказами, статусами и оплатами.</p>
+  </div>
+  <a href="{% url 'core:order-create' %}" class="btn btn-primary"><i data-lucide="plus"></i>Новый заказ</a>
+</div>
+
+<section class="card filter-card animate-slide-up mb-6">
+  <div class="card-header">
+    <div>
+      <h2 class="stats-label">Фильтры</h2>
+      <p class="card-subtitle">Используйте мягкие параметры отбора без лишнего шума.</p>
+    </div>
+  </div>
+  <form method="get">
+    {% for hidden in filter.form.hidden_fields %}{{ hidden }}{% endfor %}
+    <div class="filter-grid">
+      {% for field in filter.form.visible_fields %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<p class="form-error">{{ field.errors.0 }}</p>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    <div class="flex flex-wrap gap-3 mt-4">
+      <button type="submit" class="btn btn-primary btn-sm">Применить</button>
+      <a href="{% url 'core:order-list' %}" class="btn btn-ghost btn-sm">Сбросить</a>
+    </div>
+  </form>
+</section>
+
+<section class="animate-slide-up stagger-2">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Список заказов</h2>
+      <p class="card-subtitle">{{ orders|length }} заказов найдено</p>
+    </div>
+  </div>
+
+  <div class="data-list">
+    <div class="data-head">
+      <span>Название</span>
+      <span>Платформа</span>
+      <span>Статус</span>
+      <span class="text-right">Дата</span>
+      <span class="text-right">Сумма</span>
+      <span></span>
+    </div>
+    {% for order in orders %}
+      <article class="data-item">
+        <div>
+          <div class="data-item-header">{{ order.title }}</div>
+          <div class="data-item-subheader">{{ order.tags|default:"Без тегов" }}</div>
+        </div>
+        <div data-label="Платформа">
+          <span class="badge badge-gray platform-badge" style="--platform-color: {{ order.platform.color|default:'#0071E3' }};">{{ order.platform }}</span>
+        </div>
+        <div data-label="Статус">
+          <span class="badge badge-{% if order.status == 'paid' %}success{% elif order.status == 'completed' %}primary{% elif order.status == 'active' %}warning{% elif order.status == 'cancelled' %}danger{% else %}gray{% endif %}">
+            {{ order.get_status_display }}
+          </span>
+        </div>
+        <div data-label="Дата" class="text-right text-sm text-secondary">{{ order.completed_at|default:'—'|date:'d.m.Y' }}</div>
+        <div data-label="На руки" class="text-right font-semibold tabular-nums">{{ order.net_amount }} ₽</div>
+        <div class="text-right"><a href="{% url 'core:order-detail' pk=order.pk %}" class="btn btn-ghost btn-icon" aria-label="Открыть заказ"><i data-lucide="chevron-right"></i></a></div>
+      </article>
+    {% empty %}
+      <div class="empty-state">
+        <div class="empty-state-icon"><i data-lucide="inbox"></i></div>
+        <p>По фильтру нет заказов.</p>
+        <a href="{% url 'core:order-create' %}" class="btn btn-primary btn-sm mt-4">Создать первый заказ</a>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% include "includes/pagination.html" with page_obj=page_obj %}
+</section>
+{% endblock %}

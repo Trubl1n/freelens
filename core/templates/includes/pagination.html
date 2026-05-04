@@ -1,0 +1,12 @@
+{% load navigation %}
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <nav class="pagination" aria-label="Пагинация">
+    {% if page_obj.has_previous %}
+      <a class="btn btn-outline btn-sm" href="{% pagination_url page_obj.previous_page_number %}"><i data-lucide="chevron-left"></i>Назад</a>
+    {% endif %}
+    <span class="tabular-nums">Стр. {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}
+      <a class="btn btn-outline btn-sm" href="{% pagination_url page_obj.next_page_number %}">Вперёд<i data-lucide="chevron-right"></i></a>
+    {% endif %}
+  </nav>
+{% endif %}

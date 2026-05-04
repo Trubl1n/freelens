@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% load markdown_extras %}
+{% block title %}{{ form_title }} · Freelens{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto">
+  <div class="page-header animate-slide-up">
+    <div>
+      <a href="{% url 'core:order-list' %}" class="btn btn-ghost btn-sm"><i data-lucide="arrow-left"></i>К заказам</a>
+      <h1 class="page-title mt-4">{{ form_title }}</h1>
+      <p class="page-kicker max-w-prose">Заполните данные заказа. Комиссия и сумма на руки будут рассчитаны автоматически.</p>
+    </div>
+  </div>
+
+  <form method="post" id="order-form" class="animate-slide-up stagger-1" novalidate>
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="toast toast-error mb-4" style="position: static;"><i data-lucide="alert-circle"></i>{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <section class="form-section">
+      <div class="form-section-header">
+        <span class="stats-icon"><i data-lucide="clipboard-list"></i></span>
+        <h2 class="form-section-title">Основная информация</h2>
+      </div>
+      {{ form.platform|as_crispy_field }}
+      {{ form.title|as_crispy_field }}
+      {{ form.description|as_crispy_field }}
+    </section>
+
+    <section class="form-section">
+      <div class="form-section-header">
+        <span class="stats-icon"><i data-lucide="wallet"></i></span>
+        <h2 class="form-section-title">Финансы</h2>
+      </div>
+      {{ form.gross_amount|as_crispy_field }}
+      <p class="form-hint">Комиссия и чистый доход рассчитываются по ставке выбранной платформы.</p>
+    </section>
+
+    <section class="form-section">
+      <div class="form-section-header">
+        <span class="stats-icon"><i data-lucide="clock-3"></i></span>
+        <h2 class="form-section-title">Время работы</h2>
+      </div>
+      <div class="grid grid-2">
+        {{ form.started_at|as_crispy_field }}
+        {{ form.completed_at|as_crispy_field }}
+      </div>
+      <div id="time-validation-msg" class="hidden form-error"></div>
+      <div class="grid grid-2 items-end mt-3">
+        {{ form.time_spent_hours|as_crispy_field }}
+        <button type="button" id="calc-time-btn" class="btn btn-secondary"><i data-lucide="refresh-cw"></i>Рассчитать из дат</button>
+      </div>
+      <p class="form-hint">Укажите время вручную или рассчитайте его по датам начала и завершения.</p>
+    </section>
+
+    <section class="form-section">
+      <div class="form-section-header">
+        <span class="stats-icon"><i data-lucide="tag"></i></span>
+        <h2 class="form-section-title">Статус и теги</h2>
+      </div>
+      <div class="grid grid-2">
+        {{ form.status|as_crispy_field }}
+        {{ form.tags|as_crispy_field }}
+      </div>
+    </section>
+
+    {% if object and object.ai_rating %}
+      <section class="ai-card mb-6">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="ai-icon"><i data-lucide="lightbulb"></i></span>
+          <h2 class="card-title text-accent-purple">AI-оценка</h2>
+        </div>
+        <p class="stats-label">Оценка</p>
+        <p class="stats-value text-accent-purple">{{ object.ai_rating }}<span class="text-lg text-tertiary">/5</span></p>
+        <div class="prose mt-3">{{ object.ai_feedback|default:"Нет отзыва"|render_markdown }}</div>
+      </section>
+    {% endif %}
+
+    <div class="flex flex-col gap-3">
+      <button type="submit" class="btn btn-primary btn-full" style="min-height: 52px;">
+        {% if object %}Сохранить изменения{% else %}Создать заказ{% endif %}
+      </button>
+      <a href="{% url 'core:order-list' %}" class="btn btn-ghost btn-full">Отмена</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+  function calculateHoursDifference(start, end) {
+    if (!start || !end) return null;
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate < startDate) return null;
+    return Math.round(((endDate - startDate) / 36e5) * 100) / 100;
+  }
+  const startedAtInput = document.getElementById('id_started_at');
+  const completedAtInput = document.getElementById('id_completed_at');
+  const timeSpentInput = document.getElementById('id_time_spent_hours');
+  const calcTimeBtn = document.getElementById('calc-time-btn');
+  const validationMsg = document.getElementById('time-validation-msg');
+
+  function showMessage(text, ok) {
+    if (!validationMsg) return;
+    validationMsg.textContent = text;
+    validationMsg.classList.remove('hidden');
+    validationMsg.style.color = ok ? 'var(--green)' : 'var(--red)';
+  }
+  function updateTimeFromDates() {
+    const start = startedAtInput ? startedAtInput.value : null;
+    const end = completedAtInput ? completedAtInput.value : null;
+    if (!start || !end) return showMessage('Заполните обе даты для расчёта времени.', false);
+    const hours = calculateHoursDifference(start, end);
+    if (hours === null) return showMessage('Дата завершения должна быть позже даты начала.', false);
+    if (timeSpentInput) timeSpentInput.value = hours.toFixed(2);
+    showMessage('Время рассчитано: ' + hours.toFixed(2) + ' часов', true);
+  }
+  if (calcTimeBtn) calcTimeBtn.addEventListener('click', updateTimeFromDates);
+  [startedAtInput, completedAtInput].forEach(function(input) {
+    if (input) input.addEventListener('change', function() {
+      if (startedAtInput.value && completedAtInput.value && calculateHoursDifference(startedAtInput.value, completedAtInput.value) === null) {
+        showMessage('Дата завершения должна быть позже даты начала.', false);
+      } else if (validationMsg) {
+        validationMsg.classList.add('hidden');
+      }
+    });
+  });
+})();
+</script>
+{% endblock %}

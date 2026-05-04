@@ -1,0 +1,139 @@
+{% load static %}<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Freelens{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/apple-style.css' %}">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <script>
+    (function () {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      if (stored === 'light') document.documentElement.removeAttribute('data-theme');
+    })();
+
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      return parts.length === 2 ? parts.pop().split(';').shift() : null;
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+      window.dispatchEvent(new Event('freelens:theme-change'));
+      lucide.createIcons();
+    }
+
+    document.addEventListener('htmx:configRequest', function (event) {
+      const token = getCookie('csrftoken');
+      if (token) event.detail.headers['X-CSRFToken'] = token;
+    });
+    document.addEventListener('htmx:afterSwap', function () { lucide.createIcons(); });
+    document.addEventListener('DOMContentLoaded', function () {
+      lucide.createIcons();
+      document.querySelectorAll('.toast').forEach(function (toast) {
+        setTimeout(function () { toast.style.display = 'none'; }, 5200);
+      });
+    });
+  </script>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="app-shell">
+    <header class="navbar">
+      <nav class="navbar-inner" aria-label="Главная навигация">
+        <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:index' %}{% endif %}" class="navbar-brand">
+          <span class="brand-logo">F</span>
+          <span>Freelens</span>
+        </a>
+
+        {% if user.is_authenticated %}
+          {% with n=request.resolver_match.url_name|default_if_none:"" %}
+            <div class="navbar-nav" id="main-nav">
+              <a href="{% url 'core:dashboard' %}" class="nav-link {% if n == 'dashboard' %}active{% endif %}">
+                <i data-lucide="home"></i><span>Главная</span>
+              </a>
+              <a href="{% url 'core:order-list' %}" class="nav-link {% if n == 'order-list' or n == 'order-detail' or n == 'order-create' or n == 'order-update' %}active{% endif %}">
+                <i data-lucide="list-checks"></i><span>Заказы</span>
+              </a>
+              <a href="{% url 'core:platform-list' %}" class="nav-link {% if n == 'platform-list' or n == 'platform-create' or n == 'platform-update' %}active{% endif %}">
+                <i data-lucide="layers-3"></i><span>Платформы</span>
+              </a>
+              <a href="{% url 'core:profile' %}" class="nav-link {% if n == 'profile' %}active{% endif %}">
+                <i data-lucide="user-round"></i><span>Профиль</span>
+              </a>
+            </div>
+          {% endwith %}
+        {% endif %}
+
+        <div class="navbar-actions">
+          {% if user.is_authenticated %}
+            <button type="button" class="btn btn-ghost btn-icon menu-toggle" aria-label="Открыть меню" onclick="document.getElementById('main-nav').classList.toggle('is-open')">
+              <i data-lucide="menu"></i>
+            </button>
+          {% endif %}
+          <button type="button" onclick="toggleTheme()" title="Переключить тему" class="btn btn-ghost btn-icon" aria-label="Переключить тему">
+            <i data-lucide="sun-moon"></i>
+          </button>
+
+          {% if user.is_authenticated %}
+            <a href="{% url 'core:profile' %}" class="user-chip">
+              <span class="avatar">{{ user.username|first|upper }}</span>
+              <span>{{ user.username }}</span>
+            </a>
+            <form method="post" action="{% url 'core:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-ghost btn-icon" title="Выйти" aria-label="Выйти">
+                <i data-lucide="log-out"></i>
+              </button>
+            </form>
+          {% else %}
+            <a href="{% url 'core:login' %}" class="btn btn-primary btn-sm">Войти</a>
+            <a href="{% url 'core:register' %}" class="btn btn-secondary btn-sm">Регистрация</a>
+          {% endif %}
+        </div>
+      </nav>
+    </header>
+
+    {% if messages %}
+      <div class="toast-stack" role="status">
+        {% for message in messages %}
+          <div class="toast {% if message.tags == 'success' %}toast-success{% elif message.tags == 'error' %}toast-error{% endif %}">
+            {% if message.tags == 'success' %}
+              <i data-lucide="check-circle" class="text-success"></i>
+            {% elif message.tags == 'error' %}
+              <i data-lucide="alert-circle" class="text-danger"></i>
+            {% else %}
+              <i data-lucide="info" class="text-accent-primary"></i>
+            {% endif %}
+            <span>{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <main class="content-wrapper">
+      <div class="container">
+        {% block content %}{% endblock %}
+      </div>
+    </main>
+
+    <footer style="padding: 28px 0; border-top: 1px solid var(--line-soft);">
+      <div class="container text-center">
+        <p class="text-xs text-tertiary mb-0">Freelens · Freelance Order Tracker · {% now 'Y' %}</p>
+      </div>
+    </footer>
+  </div>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

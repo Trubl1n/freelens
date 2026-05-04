@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+{% block title %}Профиль · Freelens{% endblock %}
+{% block content %}
+<div class="profile-page">
+  <section class="profile-cover animate-slide-up">
+    <div class="profile-cover-main">
+      <div class="profile-avatar-lg">{{ user.username|slice:":1"|upper }}</div>
+      <div>
+        <p class="stats-label profile-cover-label">Профиль</p>
+        <h1 class="profile-name">{{ user.username }}</h1>
+        <p class="profile-meta">{{ user.email|default:'email не указан' }} · {{ object.timezone }}</p>
+      </div>
+    </div>
+    <div class="profile-cover-stats">
+      <div>
+        <span>Заказы</span>
+        <strong>{{ profile_stats.total_orders }}</strong>
+      </div>
+      <div>
+        <span>Завершено</span>
+        <strong>{{ profile_stats.completion_rate }}%</strong>
+      </div>
+      <div>
+        <span>Ставка</span>
+        <strong>{{ profile_stats.avg_hourly_rate }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <div class="profile-layout">
+    <div class="profile-main">
+      <section class="card animate-slide-up stagger-1">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Карьера</h2>
+            <p class="card-subtitle">Ключевые точки и текущий прогресс.</p>
+          </div>
+        </div>
+        <div class="timeline">
+          <div class="timeline-item">
+            <span class="timeline-dot"></span>
+            <p class="font-semibold mb-0">Начало карьеры</p>
+            <p class="text-sm text-secondary mb-0">{{ object.start_date|default:'—' }}{% if profile_stats.days_since_start > 0 %} · {{ profile_stats.days_since_start }} дней{% endif %}</p>
+          </div>
+          <div class="timeline-item">
+            <span class="timeline-dot" style="background: var(--green);"></span>
+            <p class="font-semibold mb-0">Первый заказ</p>
+            <p class="text-sm text-secondary mb-0">{{ object.first_order_date|default:'—' }}{% if profile_stats.days_since_first_order %} · {{ profile_stats.days_since_first_order }} дней назад{% endif %}</p>
+          </div>
+          <div class="timeline-item">
+            <span class="timeline-dot" style="background: var(--purple);"></span>
+            <p class="font-semibold mb-0">Фокус на рост</p>
+            <p class="text-sm text-secondary mb-0">Следим за ставкой, комиссиями и качеством заказов.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card animate-slide-up stagger-2">
+        <div class="card-header">
+          <div>
+            <h2 class="card-title">Навыки и цель</h2>
+            <p class="card-subtitle">То, что помогает держать фокус.</p>
+          </div>
+        </div>
+        <p class="stats-label mb-3">Навыки</p>
+        <div class="skill-cloud">
+          {% if object.skills %}
+            <span class="chip">{{ object.skills|truncatewords:24 }}</span>
+          {% else %}
+            <span class="chip">Не указаны</span>
+          {% endif %}
+        </div>
+        <div class="profile-goal mt-6">
+          <div class="flex justify-between text-sm mb-3">
+            <span class="text-secondary">Доход за 30 дней</span>
+            <span class="font-semibold">{{ profile_stats.last_month_net|default:0 }} / {{ object.target_monthly_income }}</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: {{ profile_goal_percent|default:0 }}%;"></div></div>
+        </div>
+      </section>
+
+      <section class="ai-card animate-slide-up stagger-3" id="ai-insights-section">
+        <div class="card-header">
+          <div class="flex items-start gap-3">
+            <span class="ai-icon"><i data-lucide="lightbulb"></i></span>
+            <div>
+              <h2 class="card-title text-accent-purple">AI-рекомендации</h2>
+              <p class="card-subtitle">Анализ статистики и подсказки по росту дохода.</p>
+            </div>
+          </div>
+          <button type="button" hx-post="{% url 'core:profile-analyze' %}" hx-target="#ai-insights-panel" hx-swap="innerHTML" hx-indicator="#ai-insights-loading" class="btn btn-outline btn-sm">
+            <i data-lucide="refresh-cw"></i>Обновить
+          </button>
+        </div>
+        <div id="ai-insights-loading" class="htmx-indicator mt-4">
+          <div class="skeleton" style="height: 96px;"></div>
+        </div>
+        <div id="ai-insights-panel" class="mt-4">
+          {% include "core/partials/profile_ai_insights.html" with profile=object %}
+        </div>
+      </section>
+    </div>
+
+    <aside class="profile-side">
+      <section class="card animate-slide-up stagger-1">
+        <h2 class="card-title">Метрики</h2>
+        <div class="profile-metric-list mt-4">
+          <div><span>Всего заказов</span><strong>{{ profile_stats.total_orders }}</strong></div>
+          <div><span>Чистый доход</span><strong>{{ profile_stats.all_time_net }}</strong></div>
+          <div><span>Часы</span><strong>{{ profile_stats.all_time_hours }}</strong></div>
+          <div><span>Комиссии</span><strong class="text-danger">{{ profile_stats.commission_loss_total }}</strong></div>
+        </div>
+      </section>
+
+      <section class="card animate-slide-up stagger-2">
+        <h2 class="card-title">Редактирование</h2>
+        <div class="mt-4">{% crispy form %}</div>
+      </section>
+    </aside>
+  </div>
+</div>
+{% endblock %}

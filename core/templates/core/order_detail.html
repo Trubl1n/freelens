@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load markdown_extras %}
+{% load dashboard_fmt %}
+{% block title %}{{ order.title }} · Freelens{% endblock %}
+{% block content %}
+<div class="page-header animate-slide-up">
+  <div>
+    <div class="mb-3">
+      <span class="badge badge-gray platform-badge" style="--platform-color: {{ order.platform.color|default:'#0071E3' }};">{{ order.platform }}</span>
+    </div>
+    <h1 class="page-title" style="font-size: 28px;">{{ order.title }}</h1>
+    {% if order.description %}<p class="page-kicker max-w-prose">{{ order.description }}</p>{% endif %}
+  </div>
+  <div class="flex flex-wrap gap-3">
+    <a href="{% url 'core:order-update' pk=order.pk %}" class="btn btn-outline"><i data-lucide="pencil"></i>Изменить</a>
+    <a href="{% url 'core:order-list' %}" class="btn btn-outline"><i data-lucide="arrow-left"></i>Назад</a>
+  </div>
+</div>
+
+<section class="grid grid-4 mb-8">
+  <article class="stats-card animate-slide-up stagger-1">
+    <p class="stats-label">Статус</p>
+    <div><span class="badge badge-{% if order.status == 'paid' %}success{% elif order.status == 'completed' %}primary{% elif order.status == 'active' %}warning{% elif order.status == 'cancelled' %}danger{% else %}gray{% endif %}">{{ order.get_status_display }}</span></div>
+  </article>
+  <article class="stats-card animate-slide-up stagger-2">
+    <p class="stats-label">Валово</p>
+    <p class="stats-value text-xl">{{ order.gross_amount }} ₽</p>
+  </article>
+  <article class="stats-card animate-slide-up stagger-3">
+    <p class="stats-label">Комиссия</p>
+    <p class="stats-value text-xl">{{ order.commission_amount }} ₽</p>
+  </article>
+  <article class="stats-card stats-card-success animate-slide-up stagger-4">
+    <p class="stats-label">На руки</p>
+    <p class="stats-value">{{ order.net_amount }} ₽</p>
+  </article>
+</section>
+
+<div class="grid grid-main">
+  <section class="card animate-slide-up stagger-2">
+    <h2 class="card-title mb-4">Детали</h2>
+    <div class="detail-list">
+      <div class="detail-row"><span class="detail-label">Дата начала</span><span class="detail-value">{{ order.started_at|default:'—'|date:'d.m.Y H:i' }}</span></div>
+      <div class="detail-row"><span class="detail-label">Завершён</span><span class="detail-value">{{ order.completed_at|default:'—'|date:'d.m.Y H:i' }}</span></div>
+      <div class="detail-row"><span class="detail-label">Время, часов</span><span class="detail-value">{{ order.time_spent_hours|default:'—' }}</span></div>
+      <div class="detail-row">
+        <span class="detail-label">Часовая ставка</span>
+        <span class="detail-value">
+          {% if order.time_spent_hours and order.net_amount %}{{ order.net_amount|div:order.time_spent_hours|floatformat:0 }} ₽/ч{% else %}—{% endif %}
+        </span>
+      </div>
+      <div class="detail-row"><span class="detail-label">Теги</span><span class="detail-value">{{ order.tags|default:'—' }}</span></div>
+    </div>
+  </section>
+
+  <section class="ai-card animate-slide-up stagger-3" id="ai-section">
+    <div class="card-header">
+      <div class="flex items-center gap-3">
+        <span class="ai-icon"><i data-lucide="lightbulb"></i></span>
+        <div>
+          <h2 class="card-title text-accent-purple">AI-оценка</h2>
+          <p class="card-subtitle">Рентабельность и качество заказа.</p>
+        </div>
+      </div>
+      <button type="button" hx-post="{% url 'core:order-ai-evaluate-only' pk=order.pk %}" hx-target="#ai-eval-panel" hx-swap="innerHTML" class="btn btn-outline btn-sm">
+        <i data-lucide="refresh-cw"></i>Оценить
+      </button>
+    </div>
+    {% if order.ai_rating %}
+      <div class="mb-4">
+        <p class="stats-label">Оценка</p>
+        <p id="ai-rating" class="stats-value text-accent-purple">{{ order.ai_rating }}<span class="text-lg text-tertiary">/5</span></p>
+      </div>
+    {% endif %}
+    <div id="ai-eval-panel" class="prose">
+      {{ order.ai_feedback|default:'Нет данных. Нажмите «Оценить», чтобы получить AI-анализ заказа.'|render_markdown }}
+    </div>
+  </section>
+</div>
+{% endblock %}

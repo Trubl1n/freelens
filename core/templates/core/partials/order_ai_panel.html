@@ -1,0 +1,37 @@
+{% load markdown_extras %}
+{% if form_errors %}
+  <div class="toast toast-error" style="position: static;">
+    <i data-lucide="alert-circle"></i>
+    <div>
+      <p class="font-semibold mb-0">Исправьте форму</p>
+      <ul class="form-error">
+        {% for field, errs in form_errors.items %}
+          {% for err in errs %}<li><strong>{{ field }}:</strong> {{ err }}</li>{% endfor %}
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% elif error_message %}
+  <div class="toast" style="position: static;"><i data-lucide="alert-triangle"></i>{{ error_message }}</div>
+{% elif order %}
+  {% if order.ai_rating or order.ai_feedback %}
+    <div class="prose">
+      <p class="stats-label">AI-оценка</p>
+      {% if order.ai_rating %}
+        <p class="stats-value text-accent-purple">{{ order.ai_rating }}<span class="text-lg text-tertiary">/5</span></p>
+      {% else %}
+        <p>Оценка числом недоступна, но текст анализа получен.</p>
+      {% endif %}
+      {{ order.ai_feedback|render_markdown }}
+      <p class="text-xs text-tertiary">Комиссия: {{ order.commission_amount }} · На руки: {{ order.net_amount }}</p>
+    </div>
+    <script>
+      if (document.getElementById('ai-rating')) {
+        document.getElementById('ai-rating').innerHTML = '{{ order.ai_rating|default:"—" }}{% if order.ai_rating %}<span class="text-lg text-tertiary">/5</span>{% endif %}';
+      }
+      if (window.lucide) lucide.createIcons();
+    </script>
+  {% else %}
+    <div class="prose">Оценка недоступна. Проверьте API-ключ в профиле или `.env`.</div>
+  {% endif %}
+{% endif %}

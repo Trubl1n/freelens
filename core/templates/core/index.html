@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Freelens · Главная{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto section-stack">
+  <section class="card animate-slide-up" style="padding: 40px; background: linear-gradient(135deg, #FFFFFF 0%, #F5F8FF 100%);">
+    <p class="stats-label text-accent-primary">Freelance tracker</p>
+    <h1 class="page-title mt-3">Управляйте площадками и заказами в одном месте</h1>
+    <p class="page-kicker max-w-prose">Статистика, комиссии и AI-оценка заказов в чистом минималистичном интерфейсе Freelens.</p>
+    <div class="flex flex-wrap gap-3 mt-6">
+      {% if user.is_authenticated %}
+        <a href="{% url 'core:dashboard' %}" class="btn btn-primary"><i data-lucide="home"></i>Открыть главную</a>
+        <a href="{% url 'core:order-list' %}" class="btn btn-outline"><i data-lucide="list-checks"></i>Мои заказы</a>
+      {% else %}
+        <a href="{% url 'core:login' %}" class="btn btn-primary"><i data-lucide="log-in"></i>Войти</a>
+        <a href="{% url 'core:register' %}" class="btn btn-outline">Создать аккаунт</a>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if user.is_authenticated %}
+    <section class="grid grid-3">
+      <a href="{% url 'core:dashboard' %}" class="card animate-slide-up stagger-1">
+        <span class="stats-icon"><i data-lucide="layout-dashboard"></i></span>
+        <h2 class="card-title mt-4">Главная</h2>
+        <p class="card-subtitle">Сводка, график и последние заказы.</p>
+      </a>
+      <a href="{% url 'core:platform-list' %}" class="card animate-slide-up stagger-2">
+        <span class="stats-icon"><i data-lucide="layers-3"></i></span>
+        <h2 class="card-title mt-4">Платформы</h2>
+        <p class="card-subtitle">Комиссии и цветовые акценты.</p>
+      </a>
+      <a href="{% url 'core:profile' %}" class="card animate-slide-up stagger-3">
+        <span class="stats-icon"><i data-lucide="user-round"></i></span>
+        <h2 class="card-title mt-4">Профиль</h2>
+        <p class="card-subtitle">Навыки, цели и AI-рекомендации.</p>
+      </a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

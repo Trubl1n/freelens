@@ -1,0 +1,10 @@
+{% load markdown_extras %}
+{% if profile.ai_insights %}
+  <div class="prose">
+    {{ profile.ai_insights|render_markdown }}
+  </div>
+{% else %}
+  <div class="prose">
+    <p>Рекомендации ещё не получены. Нажмите «Обновить», чтобы запустить AI-анализ.</p>
+  </div>
+{% endif %}

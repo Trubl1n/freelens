@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+{% load dashboard_fmt %}
+{% block title %}Главная · Freelens{% endblock %}
+{% block content %}
+<div class="dashboard-shell">
+  <header class="dashboard-hero animate-slide-up">
+    <div>
+      <p class="stats-label text-accent-primary">Freelens</p>
+      <h1 class="dashboard-title">Рабочая сводка</h1>
+      <p class="page-kicker">Доход, заказы и рекомендации без лишнего воздуха.</p>
+    </div>
+    <div class="dashboard-actions">
+      <a href="{% url 'core:order-create' %}" class="btn btn-primary"><i data-lucide="plus"></i>Новый заказ</a>
+      <a href="{% url 'core:platform-create' %}" class="btn btn-outline"><i data-lucide="layers-3"></i>Платформа</a>
+    </div>
+  </header>
+
+  <section class="dashboard-metrics" aria-label="Ключевые показатели">
+    <article class="metric-tile animate-slide-up stagger-1">
+      <span class="metric-icon"><i data-lucide="trending-up"></i></span>
+      <div>
+        <p class="stats-label">Валовый доход</p>
+        <strong>{{ stats.total_gross|rub }}</strong>
+        <span>до комиссии</span>
+      </div>
+    </article>
+    <article class="metric-tile metric-success animate-slide-up stagger-2">
+      <span class="metric-icon"><i data-lucide="wallet"></i></span>
+      <div>
+        <p class="stats-label">Чистый доход</p>
+        <strong>{{ stats.total_net|rub }}</strong>
+        <span>30 дней: {{ stats.last_30_days_net|rub }}</span>
+      </div>
+    </article>
+    <article class="metric-tile animate-slide-up stagger-3">
+      <span class="metric-icon"><i data-lucide="clock-3"></i></span>
+      <div>
+        <p class="stats-label">Ставка</p>
+        <strong>{% if stats.avg_hourly_rate is not None %}{{ stats.avg_hourly_rate|rub }}{% else %}—{% endif %}</strong>
+        <span>средняя за час</span>
+      </div>
+    </article>
+    <article class="metric-tile animate-slide-up stagger-4">
+      <span class="metric-icon"><i data-lucide="list-checks"></i></span>
+      <div>
+        <p class="stats-label">Заказы</p>
+        <strong>{{ stats.orders_count }}</strong>
+        <span>{{ stats.active_platforms_count }} активных площадок</span>
+      </div>
+    </article>
+  </section>
+
+  <section class="dashboard-primary">
+    <article class="card dashboard-chart-card animate-slide-up stagger-2">
+      <div class="card-header dashboard-card-header">
+        <div>
+          <h2 class="card-title">Доход по месяцам</h2>
+          <p class="card-subtitle">Последние 6 месяцев, чистая сумма.</p>
+        </div>
+      </div>
+      <div class="dashboard-chart-wrap">
+        <canvas id="net-by-month-chart" aria-label="График дохода по месяцам"></canvas>
+      </div>
+      <script type="application/json" id="dashboard-chart-json">{{ chart_payload }}</script>
+    </article>
+
+    <aside class="ai-card dashboard-ai-card animate-slide-up stagger-3">
+      <div class="card-header dashboard-card-header">
+        <div class="flex items-center gap-3">
+          <span class="ai-icon"><i data-lucide="lightbulb"></i></span>
+          <div>
+            <h2 class="card-title text-accent-purple">AI Insights</h2>
+            <p class="card-subtitle">Коротко по активности.</p>
+          </div>
+        </div>
+        <button type="button" hx-post="{% url 'core:profile-analyze' %}" hx-target="#dashboard-ai-panel" hx-swap="innerHTML" hx-indicator="#dashboard-ai-loading" class="btn btn-outline btn-sm">
+          <i data-lucide="refresh-cw"></i>Обновить
+        </button>
+      </div>
+      <div id="dashboard-ai-loading" class="htmx-indicator">
+        <div class="skeleton" style="height: 72px;"></div>
+      </div>
+      <div id="dashboard-ai-panel" class="dashboard-ai-scroll">
+        {% include "core/partials/profile_ai_insights.html" with profile=profile %}
+      </div>
+      <div class="dashboard-time">
+        <p class="stats-label">Общее время</p>
+        <strong>{{ stats.completed_minutes_total|minutes_human }}</strong>
+        {% if stats.completed_minutes_total %}<span>≈ {{ stats.completed_minutes_total|hours_decimal }} ч</span>{% endif %}
+      </div>
+    </aside>
+  </section>
+
+  <section class="dashboard-secondary">
+    <article class="card dashboard-list-card animate-slide-up stagger-4">
+      <div class="card-header dashboard-card-header">
+        <div>
+          <h2 class="card-title">Последние заказы</h2>
+          <p class="card-subtitle">Свежие операции.</p>
+        </div>
+        <a href="{% url 'core:order-list' %}" class="btn btn-ghost btn-sm">Все</a>
+      </div>
+      <div class="compact-list">
+        {% for o in recent_orders %}
+          <a href="{% url 'core:order-detail' pk=o.pk %}" class="compact-row">
+            <span>
+              <strong>{{ o.title }}</strong>
+              <small>{{ o.platform }}</small>
+            </span>
+            <span class="badge badge-{% if o.status == 'paid' %}success{% elif o.status == 'completed' %}primary{% elif o.status == 'active' %}warning{% elif o.status == 'cancelled' %}danger{% else %}gray{% endif %}">{{ o.get_status_display }}</span>
+            <time>{{ o.completed_at|default:'—'|date:'d.m.Y' }}</time>
+            <b>{{ o.net_amount|rub }}</b>
+            <i data-lucide="chevron-right"></i>
+          </a>
+        {% empty %}
+          <div class="empty-state"><div class="empty-state-icon"><i data-lucide="inbox"></i></div><p>Пока нет заказов.</p></div>
+        {% endfor %}
+      </div>
+    </article>
+
+    <aside class="dashboard-side-stack">
+      <article class="card dashboard-list-card animate-slide-up stagger-5">
+        <div class="card-header dashboard-card-header">
+          <div>
+            <h2 class="card-title">Платформы</h2>
+            <p class="card-subtitle">По чистому доходу.</p>
+          </div>
+          <a href="{% url 'core:platform-list' %}" class="btn btn-ghost btn-sm">Все</a>
+        </div>
+        <div class="platform-mini-list">
+          {% for row in orders_by_platform|slice:":5" %}
+            <div class="platform-mini-row">
+              <span class="platform-color" style="--platform-color: {{ row.color|default:'#0071E3' }};"></span>
+              <div>
+                <strong>{{ row.name }}</strong>
+                <small>{{ row.total_orders }} заказов</small>
+              </div>
+              <b>{{ row.net_sum|rub }}</b>
+            </div>
+          {% empty %}
+            <p class="text-sm text-secondary mb-0">Платформ пока нет.</p>
+          {% endfor %}
+        </div>
+      </article>
+
+      <article class="card dashboard-actions-card animate-slide-up stagger-5">
+        <a href="{% url 'core:profile' %}" class="quick-link"><i data-lucide="user-round"></i>Профиль<i data-lucide="chevron-right"></i></a>
+        <a href="{% url 'core:platform-list' %}" class="quick-link"><i data-lucide="layers-3"></i>Платформы<i data-lucide="chevron-right"></i></a>
+        <a href="{% url 'admin:index' %}" class="quick-link"><i data-lucide="settings"></i>Админка<i data-lucide="chevron-right"></i></a>
+      </article>
+    </aside>
+  </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+  var chart;
+  function renderChart() {
+    var el = document.getElementById('dashboard-chart-json');
+    var canvas = document.getElementById('net-by-month-chart');
+    if (!el || !canvas || !window.Chart) return;
+    if (chart) chart.destroy();
+    var payload = JSON.parse(el.textContent || '{}');
+    var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var ctx = canvas.getContext('2d');
+    var gradient = ctx.createLinearGradient(0, 0, 0, 260);
+    gradient.addColorStop(0, dark ? 'rgba(10,132,255,.22)' : 'rgba(0,113,227,.18)');
+    gradient.addColorStop(1, 'rgba(0,113,227,0)');
+    chart = new Chart(ctx, {
+      type: 'line',
+      data: { labels: payload.labels || [], datasets: [{ data: payload.values || [], borderColor: dark ? '#0A84FF' : '#0071E3', backgroundColor: gradient, fill: true, tension: 0.42, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2.5 }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { intersect: false, mode: 'index' },
+        layout: { padding: { top: 8, right: 8, bottom: 0, left: 0 } },
+        scales: {
+          x: { grid: { display: false }, border: { display: false }, ticks: { color: dark ? '#A1A1AA' : '#6E6E73', maxRotation: 0, font: { family: '-apple-system, BlinkMacSystemFont, Segoe UI, sans-serif', size: 12 } } },
+          y: { beginAtZero: true, border: { display: false }, grid: { color: dark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.04)' }, ticks: { color: dark ? '#A1A1AA' : '#6E6E73', callback: function(v){ return v.toLocaleString('ru-RU') + ' ₽'; } } }
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: { displayColors: false, padding: 12, cornerRadius: 12, backgroundColor: dark ? 'rgba(28,28,30,.94)' : 'rgba(255,255,255,.94)', titleColor: dark ? '#fff' : '#1D1D1F', bodyColor: dark ? '#fff' : '#1D1D1F', borderWidth: 1, borderColor: dark ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)', callbacks: { label: function(c){ return c.parsed.y.toLocaleString('ru-RU') + ' ₽'; } } }
+        }
+      }
+    });
+  }
+  document.addEventListener('DOMContentLoaded', renderChart);
+  window.addEventListener('freelens:theme-change', renderChart);
+})();
+</script>
+{% endblock %}

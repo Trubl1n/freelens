@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Платформы · Freelens{% endblock %}
+{% block content %}
+<div class="page-header animate-slide-up">
+  <div>
+    <h1 class="page-title">Платформы</h1>
+    <p class="page-kicker">Комиссии, сайты и активность рабочих площадок.</p>
+  </div>
+  <a href="{% url 'core:platform-create' %}" class="btn btn-primary"><i data-lucide="plus"></i>Добавить платформу</a>
+</div>
+
+<section class="platform-grid animate-slide-up stagger-1">
+  {% for p in platforms %}
+    <article class="platform-card" style="--platform-color: {{ p.color|default:'#0071E3' }};">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="card-title">{{ p.name }}</h2>
+          {% if p.website %}
+            <a href="{{ p.website }}" class="text-sm text-accent-primary" target="_blank" rel="noopener">{{ p.website }}</a>
+          {% else %}
+            <p class="text-sm text-tertiary mb-0">Сайт не указан</p>
+          {% endif %}
+        </div>
+        <span class="platform-color" style="--platform-color: {{ p.color|default:'#0071E3' }};" title="{{ p.color }}"></span>
+      </div>
+      <div class="detail-list">
+        <div class="detail-row"><span class="detail-label">Комиссия</span><span class="detail-value tabular-nums">{{ p.commission_rate }}%</span></div>
+        <div class="detail-row"><span class="detail-label">Статус</span><span class="detail-value">{% if p.is_active %}<span class="badge badge-success">активна</span>{% else %}<span class="badge badge-gray">неактивна</span>{% endif %}</span></div>
+      </div>
+      <div class="flex gap-2">
+        <a href="{% url 'core:platform-update' pk=p.pk %}" class="btn btn-outline btn-sm flex-1"><i data-lucide="pencil"></i>Изменить</a>
+        <a href="{% url 'core:platform-delete' pk=p.pk %}" class="btn btn-danger btn-sm"><i data-lucide="trash-2"></i></a>
+      </div>
+    </article>
+  {% empty %}
+    <div class="card empty-state" style="grid-column: 1 / -1;">
+      <div class="empty-state-icon"><i data-lucide="layers-3"></i></div>
+      <p>Платформ пока нет.</p>
+      <a href="{% url 'core:platform-create' %}" class="btn btn-primary btn-sm mt-4">Добавить первую</a>
+    </div>
+  {% endfor %}
+</section>
+
+{% include "includes/pagination.html" with page_obj=page_obj %}
+{% endblock %}
