@@ -14,9 +14,19 @@ if TYPE_CHECKING:
 
 FREE_MODEL = "open-mistral-nemo"
 
-ORDER_SYSTEM_PROMPT = """Ты аналитик эффективности фриланс-заказов.
+ORDER_SYSTEM_PROMPT = """Ты аналитик экономической эффективности фриланс-заказов.
+Оценивай заказ ТОЛЬКО исходя из потраченного времени и полученной суммы (часовой ставки).
 Верни только JSON вида {"rating": int, "feedback": string}.
-Оценка от 1 до 5. Feedback пиши на русском, в Markdown, коротко и практично."""
+Оценка от 1 до 5. Feedback пиши на русском, в Markdown, коротко и практично.
+
+Критерии оценки:
+- 5: Ставка ≥2500 ₽/ч — отличный заказ
+- 4: Ставка 1500-2500 ₽/ч — хороший заказ  
+- 3: Ставка 800-1500 ₽/ч — средний заказ
+- 2: Ставка 400-800 ₽/ч — низкая эффективность
+- 1: Ставка <400 ₽/ч — экономически невыгодный заказ
+
+Не оценивай качество работы или сложность задачи. Только экономика."""
 
 PROFILE_SYSTEM_PROMPT = """Ты бизнес-аналитик для фрилансера.
 Дай рекомендации на русском в Markdown: краткая оценка, 3 совета по доходу, 3 совета по времени, итоговый фокус на месяц."""
@@ -123,16 +133,8 @@ class MistralService:
     def _order_messages(self, order: "Order", user=None) -> list[dict]:
         hours = _money(order.time_spent_hours)
         hourly = _money(order.net_amount) / hours if hours > 0 else Decimal("0")
-        total_earned = Decimal("0")
-        if user is not None:
-            try:
-                from ..models import Order as OrderModel
-
-                total_earned = OrderModel.objects.filter(status=OrderModel.Status.PAID).aggregate(total=Sum("net_amount"))["total"] or Decimal("0")
-            except Exception:
-                pass
-
-        content = f"""Заказ:
+        
+        content = f"""Заказ для оценки экономической эффективности:
 - Название: {order.title}
 - Платформа: {order.platform.name if order.platform else "—"}
 - Статус: {order.get_status_display()}
@@ -141,10 +143,8 @@ class MistralService:
 - Комиссия: {order.commission_amount} ₽
 - Время: {hours:.2f} ч
 - Ставка: {hourly:.0f} ₽/ч
-- Описание: {order.description or "—"}
 
-Контекст:
-- Оплачено всего: {total_earned} ₽"""
+Оценивай ТОЛЬКО по часовой ставке. Не оценивай качество работы или сложность."""
         return [{"role": "system", "content": ORDER_SYSTEM_PROMPT}, {"role": "user", "content": content}]
 
     def _extract_json(self, text: str) -> dict | None:
