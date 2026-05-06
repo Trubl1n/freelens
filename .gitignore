@@ -1,11 +1,1 @@
-__pycache__/
-*.pyc
-db.sqlite3
-venv/
-.env
-media/
-staticfiles/
-*.log
-.DS_Store
-.idea/
-.vscode/
+Nothing needs to be added to .gitignore since only a Python source file was modified and no build artifacts, dependencies, or temporary files were detected in the changes.
